@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Roblox Speaking Challenge</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --red:#E2231A; --blue:#00A2FF; --yellow:#FFD700; --green:#00E676;
+    --p1:#FF3E3E; --p2:#00C853; --p3:#448AFF; --p4:#FFD600;
+    --p1d:#B71C1C; --p2d:#1B5E20; --p3d:#0D47A1; --p4d:#F57F17;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  body{margin:0;background:#1a0533;font-family:'Fredoka One',cursive;overflow:hidden;height:100dvh;display:flex;flex-direction:column;user-select:none;}
+
+  /* Stars BG */
+  #stars{position:fixed;inset:0;pointer-events:none;z-index:0;}
+  .star{position:absolute;background:#fff;border-radius:50%;animation:twinkle 2s infinite;}
+  @keyframes twinkle{0%,100%{opacity:.2}50%{opacity:1}}
+
+  /* ===== SCREEN: CHARACTER SELECT ===== */
+  #screen-char{position:fixed;inset:0;z-index:50;background:linear-gradient(135deg,#1a0533,#0d1b4b);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;}
+  .char-title{font-size:2rem;color:#FFD700;text-shadow:0 0 20px #FFD700,2px 2px 0 #000;text-align:center;margin-bottom:5px;}
+  .char-subtitle{font-size:1rem;color:#aaa;font-family:'Nunito',sans-serif;margin-bottom:20px;text-align:center;}
+  .char-slots{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;width:100%;max-width:480px;}
+  .char-slot{background:rgba(255,255,255,0.05);border:2px dashed rgba(255,255,255,0.2);border-radius:16px;padding:12px;cursor:pointer;transition:all .2s;}
+  .char-slot.assigned{border-style:solid;background:rgba(255,255,255,0.1);}
+  .char-slot .p-label{font-size:1.1rem;text-align:center;margin-bottom:8px;}
+  .char-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;}
+  .char-opt{font-size:2.2rem;padding:4px;border-radius:8px;cursor:pointer;transition:transform .15s,background .15s;text-align:center;}
+  .char-opt:hover{transform:scale(1.2);background:rgba(255,255,255,0.15);}
+  .char-opt.selected{background:rgba(255,255,255,0.3);transform:scale(1.1);border:2px solid #FFD700;}
+  .char-name{font-size:.75rem;color:#ccc;text-align:center;margin-top:4px;font-family:'Nunito',sans-serif;}
+  .start-btn{margin-top:20px;padding:16px 40px;background:var(--yellow);color:#000;border:none;border-radius:50px;font-family:'Fredoka One',cursive;font-size:1.4rem;cursor:pointer;box-shadow:0 6px 0 #b8860b;transition:all .15s;width:90%;max-width:360px;}
+  .start-btn:active{transform:translateY(4px);box-shadow:0 2px 0 #b8860b;}
+
+  /* ===== SCOREBOARD ===== */
+  #scoreboard{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:8px;background:#000;z-index:10;position:relative;}
+  .p-score{padding:6px 4px;border-radius:10px;text-align:center;border-bottom:4px solid rgba(0,0,0,0.35);font-size:.9rem;line-height:1.2;}
+  .p-score .emo{font-size:1.4rem;display:block;}
+  .p-score .pts{font-size:1.1rem;font-weight:bold;}
+
+  /* ===== GAME VIEW ===== */
+  #game-view{flex-grow:1;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;z-index:5;padding:10px;}
+  .round-badge{background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:20px;padding:4px 14px;color:#ccc;font-size:.85rem;margin-bottom:8px;font-family:'Nunito',sans-serif;}
+
+  #image-card{width:280px;height:200px;background:#fff;border:6px solid #fff;border-radius:20px;display:flex;align-items:center;justify-content:center;margin-bottom:14px;overflow:hidden;position:relative;box-shadow:0 0 0 3px var(--blue),0 0 30px rgba(0,162,255,0.4);}
+  #target-img{max-width:100%;max-height:100%;object-fit:contain;}
+  .hint-label{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.6);color:#fff;text-align:center;padding:4px;font-size:.85rem;font-family:'Nunito',sans-serif;}
+
+  .speak-label{color:#fff;font-size:1rem;font-family:'Nunito',sans-serif;margin-bottom:10px;opacity:.8;letter-spacing:.05em;}
+
+  .btn-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:92%;max-width:480px;}
+  .win-btn{height:80px;border:none;border-radius:14px;color:#fff;font-size:1.1rem;font-family:'Fredoka One',cursive;box-shadow:0 6px 0 rgba(0,0,0,0.4);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;transition:transform .1s,box-shadow .1s;}
+  .win-btn:active{transform:translateY(4px);box-shadow:0 2px 0 rgba(0,0,0,0.4);}
+  .win-btn .btn-emo{font-size:1.6rem;line-height:1;}
+  .win-btn .btn-name{font-size:.7rem;font-family:'Nunito',sans-serif;opacity:.85;}
+
+  /* ===== OVERLAYS ===== */
+  .overlay-wrap{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.82);z-index:200;align-items:center;justify-content:center;flex-direction:column;}
+  .overlay-wrap.show{display:flex;}
+
+  /* Win modal */
+  .reward-card{background:#fff;color:#000;padding:30px 30px 20px;border-radius:24px;text-align:center;max-width:320px;width:90%;}
+  .reward-card h1{margin:0 0 5px;font-size:2rem;}
+  .reward-card .big-emo{font-size:5rem;margin:5px 0;line-height:1;}
+  .reward-card .pts-gained{font-size:1.6rem;font-weight:900;font-family:'Nunito',sans-serif;color:#E2231A;}
+  .reward-btn{margin-top:16px;background:var(--red);color:#fff;border:none;padding:14px 30px;border-radius:10px;font-size:1.1rem;font-family:'Fredoka One',cursive;cursor:pointer;width:100%;box-shadow:0 4px 0 #8b0000;transition:all .1s;}
+  .reward-btn:active{transform:translateY(3px);box-shadow:0 1px 0 #8b0000;}
+
+  /* Winner screen */
+  #screen-winner{background:linear-gradient(135deg,#1a0533,#0d1b4b);}
+  .winner-card{background:linear-gradient(135deg,#FFD700,#ff9800);padding:30px;border-radius:24px;text-align:center;max-width:340px;width:90%;box-shadow:0 0 60px rgba(255,215,0,0.6);}
+  .winner-card h1{font-size:2.2rem;color:#000;margin:0 0 5px;}
+  .winner-card .w-emo{font-size:5rem;line-height:1;margin:5px 0;}
+  .winner-card .w-name{font-size:1.5rem;color:#000;font-family:'Nunito',sans-serif;font-weight:900;}
+  .winner-card .w-pts{font-size:1.1rem;color:#333;font-family:'Nunito',sans-serif;}
+  .play-again-btn{margin-top:20px;padding:14px 30px;background:#1a0533;color:#FFD700;border:none;border-radius:50px;font-family:'Fredoka One',cursive;font-size:1.3rem;cursor:pointer;width:100%;}
+
+  /* Combo flash */
+  .combo-flash{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);font-family:'Fredoka One',cursive;font-size:3.5rem;color:#FFD700;text-shadow:0 0 30px #FF6F00,3px 3px 0 #000;z-index:999;pointer-events:none;opacity:0;transition:opacity .3s;}
+  .combo-flash.show{animation:comboAnim .8s forwards;}
+  @keyframes comboAnim{0%{opacity:1;transform:translate(-50%,-50%) scale(.5)}40%{opacity:1;transform:translate(-50%,-50%) scale(1.3)}70%{opacity:1;transform:translate(-50%,-60%) scale(1.1)}100%{opacity:0;transform:translate(-50%,-80%) scale(1)}}
+
+  /* Progress bar */
+  #prog-bar-wrap{width:92%;max-width:480px;height:6px;background:rgba(255,255,255,0.1);border-radius:3px;margin-bottom:10px;}
+  #prog-bar{height:100%;background:linear-gradient(90deg,var(--blue),var(--green));border-radius:3px;transition:width .5s ease;}
+
+  /* Pulse animation on card */
+  @keyframes cardPulse{0%,100%{box-shadow:0 0 0 3px var(--blue),0 0 20px rgba(0,162,255,0.4)}50%{box-shadow:0 0 0 5px var(--blue),0 0 40px rgba(0,162,255,0.8)}}
+  #image-card.pulse{animation:cardPulse 1s infinite;}
+</style>
+</head>
+<body>
+
+<!-- Stars -->
+<div id="stars"></div>
+
+<!-- CHARACTER SELECT SCREEN -->
+<div id="screen-char">
+  <div class="char-title">🎮 SPEAKING CHALLENGE</div>
+  <div class="char-subtitle">Pick your Roblox character!</div>
+  <div class="char-slots" id="char-slots"></div>
+  <button class="start-btn" onclick="startGame()">▶ LET'S GO!</button>
+</div>
+
+<!-- SCOREBOARD -->
+<div id="scoreboard" style="display:none" id="sb"></div>
+
+<!-- GAME VIEW -->
+<div id="game-view" style="display:none">
+  <div class="round-badge" id="round-badge">Round 1 / 7</div>
+  <div id="prog-bar-wrap"><div id="prog-bar" style="width:0%"></div></div>
+  <div id="image-card" class="pulse">
+    <img id="target-img" src="" alt="Question">
+    <div class="hint-label" id="hint-label"></div>
+  </div>
+  <div class="speak-label">⚡ FIRST TO ANSWER WINS! ⚡</div>
+  <div class="btn-grid" id="btn-grid"></div>
+  <button onclick="showWinner()" style="margin-top:10px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.5);border-radius:20px;padding:5px 18px;font-family:'Nunito',sans-serif;font-size:.75rem;cursor:pointer;">🏁 End Game & See Winner</button>
+</div>
+
+<!-- WIN OVERLAY -->
+<div class="overlay-wrap" id="overlay">
+  <div class="reward-card" id="reward-card">
+    <h1 id="win-text">PLAYER 1!</h1>
+    <div class="big-emo" id="win-emo">🏆</div>
+    <div class="pts-gained">+10 POINTS!</div>
+    <div id="win-streak" style="font-size:.9rem;color:#555;margin-top:4px;font-family:'Nunito',sans-serif;"></div>
+    <button class="reward-btn" onclick="next()">NEXT ROUND ▶</button>
+  </div>
+</div>
+
+<!-- WINNER SCREEN -->
+<div class="overlay-wrap" id="screen-winner">
+  <div class="winner-card">
+    <h1>🏆 WINNER! 🏆</h1>
+    <div class="w-emo" id="winner-emo">🎮</div>
+    <div class="w-name" id="winner-name">PLAYER 1</div>
+    <div class="w-pts" id="winner-pts">with 70 points</div>
+    <button class="play-again-btn" onclick="location.reload()">🔄 PLAY AGAIN</button>
+  </div>
+</div>
+
+<!-- Combo Flash -->
+<div class="combo-flash" id="combo-flash"></div>
+
+<!-- AUDIO (Web Audio API generated) -->
+
+<script>
+// ===== WEB AUDIO ENGINE =====
+const AC = new (window.AudioContext || window.webkitAudioContext)();
+
+function playTone(freq, type, dur, vol=0.3, delay=0){
+  const t=AC.currentTime+delay;
+  const o=AC.createOscillator(), g=AC.createGain();
+  o.connect(g); g.connect(AC.destination);
+  o.type=type; o.frequency.setValueAtTime(freq,t);
+  g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(vol,t+0.01);
+  g.gain.exponentialRampToValueAtTime(0.001,t+dur);
+  o.start(t); o.stop(t+dur);
+}
+
+function sfxWin(){
+  // Fanfare arpeggio
+  const notes=[523,659,784,1047];
+  notes.forEach((f,i)=>playTone(f,'square',.18,.25,i*.1));
+  setTimeout(()=>playTone(1047,'square',.4,.3),450);
+}
+
+function sfxClick(){
+  playTone(880,'square',.08,.2);
+  playTone(1100,'square',.06,.15,.05);
+}
+
+function sfxWhoosh(){
+  const n=AC.createOscillator(), g=AC.createGain();
+  n.connect(g); g.connect(AC.destination);
+  n.type='sawtooth';
+  n.frequency.setValueAtTime(600,AC.currentTime);
+  n.frequency.exponentialRampToValueAtTime(100,AC.currentTime+.4);
+  g.gain.setValueAtTime(.3,AC.currentTime);
+  g.gain.exponentialRampToValueAtTime(.001,AC.currentTime+.4);
+  n.start(); n.stop(AC.currentTime+.4);
+}
+
+function sfxFinalWin(){
+  const melody=[523,659,784,1047,1047,784,1047];
+  melody.forEach((f,i)=>playTone(f,'square',.2,.3,i*.12));
+}
+
+function sfxCombo(){
+  [880,1100,1320,1760].forEach((f,i)=>playTone(f,'triangle',.15,.25,i*.08));
+}
+
+// ===== ARCADE THEME MUSIC ENGINE =====
+// Classic arcade melody: upbeat chiptune loop inspired by 8-bit game themes
+let beatInt=null;
+let melodyInt=null;
+let bassInt=null;
+let arpeggioInt=null;
+
+const BPM=148;
+const STEP=60/BPM/4; // 16th note duration in seconds
+
+// Arcade melody: classic ascending/descending chiptune phrase (2-bar loop)
+const MELODY=[
+  659,0,784,0,880,0,1047,880,
+  784,0,659,0,523,0,659,0,
+  784,0,880,0,1047,0,1175,1047,
+  880,784,659,0,784,0,0,0
+];
+// Bass line (root notes, 1 per beat)
+const BASS=[131,131,165,131, 131,110,131,131, 131,131,165,131, 110,110,131,131];
+// Chord arpeggio (fast 16th note sweeps)
+const ARP=[523,659,784,659, 523,659,784,659, 494,622,740,622, 523,659,784,659];
+// Kick/snare/hihat pattern
+const KICK= [1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0];
+const SNARE=[0,0,0,0,1,0,0,0,0,0,0,0,1,0,1,0];
+const HIHAT=[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1];
+
+function playNote(freq,type,dur,vol,startT){
+  if(!freq) return;
+  const o=AC.createOscillator(),g=AC.createGain(),f=AC.createBiquadFilter();
+  f.type='lowpass';f.frequency.value=3000;
+  o.connect(f);f.connect(g);g.connect(AC.destination);
+  o.type=type;o.frequency.setValueAtTime(freq,startT);
+  g.gain.setValueAtTime(0,startT);
+  g.gain.linearRampToValueAtTime(vol,startT+0.005);
+  g.gain.setValueAtTime(vol,startT+dur*0.6);
+  g.gain.exponentialRampToValueAtTime(0.001,startT+dur*0.95);
+  o.start(startT);o.stop(startT+dur);
+}
+
+function playKick(t){
+  const o=AC.createOscillator(),g=AC.createGain();
+  o.connect(g);g.connect(AC.destination);
+  o.frequency.setValueAtTime(180,t);o.frequency.exponentialRampToValueAtTime(35,t+0.18);
+  g.gain.setValueAtTime(0.55,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.22);
+  o.start(t);o.stop(t+0.22);
+}
+function playSnare(t){
+  const buf=AC.createBuffer(1,AC.sampleRate*0.12,AC.sampleRate);
+  const d=buf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*0.4;
+  const s=AC.createBufferSource(),g=AC.createGain(),f=AC.createBiquadFilter();
+  f.type='highpass';f.frequency.value=1000;
+  s.buffer=buf;s.connect(f);f.connect(g);g.connect(AC.destination);
+  g.gain.setValueAtTime(0.35,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.12);
+  s.start(t);
+}
+function playHihat(t,open){
+  const buf=AC.createBuffer(1,AC.sampleRate*(open?0.06:0.025),AC.sampleRate);
+  const d=buf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*0.2;
+  const s=AC.createBufferSource(),g=AC.createGain(),f=AC.createBiquadFilter();
+  f.type='highpass';f.frequency.value=7000;
+  s.buffer=buf;s.connect(f);f.connect(g);g.connect(AC.destination);
+  g.gain.setValueAtTime(0.18,t);g.gain.exponentialRampToValueAtTime(0.001,t+(open?0.06:0.025));
+  s.start(t);
+}
+
+function startBeat(){
+  if(beatInt) return;
+  let step=0;
+  // Schedule one full bar ahead every tick for smooth playback
+  beatInt=setInterval(()=>{
+    const t=AC.currentTime+0.05; // tiny lookahead
+    const s16=step%16;
+    const stepT=t;
+
+    // Drums
+    if(KICK[s16]) playKick(stepT);
+    if(SNARE[s16]) playSnare(stepT);
+    if(HIHAT[s16]) playHihat(stepT, s16%4===2);
+
+    // Melody — square wave chiptune lead
+    const mFreq=MELODY[step%32];
+    if(mFreq) playNote(mFreq,'square',STEP*0.8,0.18,stepT);
+
+    // Bass — triangle wave, every 4 steps
+    if(s16%4===0){
+      const bFreq=BASS[Math.floor(s16/1)%16];
+      playNote(bFreq,'triangle',STEP*3.5,0.22,stepT);
+    }
+
+    // Arpeggio — sawtooth shimmer
+    const aFreq=ARP[step%16];
+    if(aFreq) playNote(aFreq,'sawtooth',STEP*0.5,0.06,stepT);
+
+    step++;
+  },STEP*1000);
+}
+
+// ===== GAME DATA =====
+const characters = [
+  {name:"Noob",emo:"🟡"},
+  {name:"Bacon",emo:"🥓"},
+  {name:"Guest",emo:"👻"},
+  {name:"Builderman",emo:"🔨"},
+  {name:"Ninja",emo:"🥷"},
+  {name:"Knight",emo:"⚔️"},
+  {name:"Wizard",emo:"🧙"},
+  {name:"Pirate",emo:"🏴‍☠️"},
+  {name:"Astronaut",emo:"🚀"},
+  {name:"Zombie",emo:"🧟"},
+  {name:"Hero",emo:"🦸"},
+  {name:"Robot",emo:"🤖"},
+];
+
+const PLAYER_COLORS = ['#FF3E3E','#00C853','#448AFF','#FFD600'];
+const PLAYER_SHADOW = ['#8b0000','#1B5E20','#0D47A1','#b8860b'];
+
+const ALL_QUESTIONS = [
+  {
+    img:"https://i.ibb.co/QFw8RC1c/56.jpg",
+    hint:"Where are you going?",
+    answer:"covered court"
+  },
+  {
+    img:"https://i.ibb.co/7xY2n0wW/57.jpg",
+    hint:"Where are you going?",
+    answer:"parking lot"
+  },
+  {
+    img:"https://i.ibb.co/xK2cRkQ3/58.jpg",
+    hint:"Where are you going?",
+    answer:"farm"
+  },
+  {
+    img:"https://i.ibb.co/PZYh6Z75/59.jpg",
+    hint:"📚 Where are you going?",
+    answer:"library"
+  },
+  {
+    img:"https://i.ibb.co/wZ6cX0fV/60.jpg",
+    hint:"Where are you going?",
+    answer:"clinic"
+  },
+  {
+    img:"https://i.ibb.co/d0NXWF3G/61.jpg",
+    hint:"Where are you going?",
+    answer:"toilet"
+  },
+  {
+    img:"https://i.ibb.co/cXwpPnDp/62.jpg",
+    hint:"Where are you going?",
+    answer:"playground"
+  },
+  {
+    img:"https://i.ibb.co/ccG8Pwy9/63.jpg",
+    hint:"Where are you going?",
+    answer:"office"
+  }
+];
+
+function shuffle(arr){
+  const a=[...arr];
+  for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
+  return a;
+}
+
+let questions = shuffle(ALL_QUESTIONS);
+
+// ===== STATE =====
+const NUM_PLAYERS = 4;
+const scores = [0,0,0,0];
+const streaks = [0,0,0,0];
+const chosenChars = [null,null,null,null];
+let currentQ = 0;
+let gameStarted = false;
+let roundNum = 1;
+
+// ===== STARS =====
+(function(){
+  const s=document.getElementById('stars');
+  for(let i=0;i<60;i++){
+    const d=document.createElement('div');
+    d.className='star';
+    const sz=Math.random()*2.5+.5;
+    d.style.cssText=`width:${sz}px;height:${sz}px;top:${Math.random()*100}%;left:${Math.random()*100}%;animation-delay:${Math.random()*3}s;animation-duration:${1.5+Math.random()*2}s`;
+    s.appendChild(d);
+  }
+})();
+
+// ===== CHARACTER SELECT =====
+function buildCharSelect(){
+  const slots=document.getElementById('char-slots');
+  slots.innerHTML='';
+  for(let p=0;p<NUM_PLAYERS;p++){
+    const div=document.createElement('div');
+    div.className='char-slot'+(chosenChars[p]?` assigned`:'');
+    div.style.borderColor=PLAYER_COLORS[p];
+    div.innerHTML=`<div class="p-label" style="color:${PLAYER_COLORS[p]}">P${p+1} ${chosenChars[p]?chosenChars[p].emo+' '+chosenChars[p].name:'— choose —'}</div><div class="char-grid" id="cg${p}"></div>`;
+    slots.appendChild(div);
+    const grid=div.querySelector(`#cg${p}`);
+    characters.forEach((c,ci)=>{
+      const btn=document.createElement('div');
+      btn.className='char-opt'+(chosenChars[p]===c?' selected':'');
+      btn.title=c.name;
+      btn.textContent=c.emo;
+      btn.onclick=()=>{
+        chosenChars[p]=c;
+        sfxClick();
+        buildCharSelect();
+      };
+      grid.appendChild(btn);
+    });
+  }
+}
+buildCharSelect();
+
+// ===== START GAME =====
+function startGame(){
+  // Fill unassigned with defaults
+  for(let p=0;p<NUM_PLAYERS;p++){
+    if(!chosenChars[p]) chosenChars[p]=characters[p];
+  }
+  AC.resume();
+  sfxWhoosh();
+  startBeat();
+
+  document.getElementById('screen-char').style.display='none';
+
+  // Build scoreboard
+  const sb=document.getElementById('scoreboard');
+  sb.style.display='grid';
+  sb.innerHTML='';
+  for(let p=0;p<NUM_PLAYERS;p++){
+    sb.innerHTML+=`<div class="p-score" style="background:${PLAYER_COLORS[p]};border-bottom-color:${PLAYER_SHADOW[p]}">
+      <span class="emo">${chosenChars[p].emo}</span>
+      <span style="font-size:.7rem">${chosenChars[p].name}</span><br>
+      <span class="pts" id="s${p}">0</span>
+    </div>`;
+  }
+
+  // Build buttons
+  const bg=document.getElementById('btn-grid');
+  bg.innerHTML='';
+  for(let p=0;p<NUM_PLAYERS;p++){
+    bg.innerHTML+=`<button class="win-btn" style="background:${PLAYER_COLORS[p]};box-shadow:0 6px 0 ${PLAYER_SHADOW[p]}" onclick="win(${p})">
+      <span class="btn-emo">${chosenChars[p].emo}</span>
+      <span>P${p+1} ${chosenChars[p].name}</span>
+    </button>`;
+  }
+
+  document.getElementById('game-view').style.display='flex';
+  gameStarted=true;
+  showQuestion();
+}
+
+// ===== SHOW QUESTION =====
+function showQuestion(){
+  if(currentQ>=questions.length){
+    // All 8 done — shuffle and restart deck, keep scores
+    questions=shuffle(ALL_QUESTIONS);
+    currentQ=0;
+    roundNum++;
+    // Flash shuffle notice
+    const cf=document.getElementById('combo-flash');
+    cf.textContent='🔀 SHUFFLED! Round '+roundNum;
+    cf.classList.remove('show');
+    void cf.offsetWidth;
+    cf.classList.add('show');
+    sfxCombo();
+  }
+  const q=questions[currentQ];
+  document.getElementById('target-img').src=q.img;
+  document.getElementById('hint-label').textContent=q.hint;
+  document.getElementById('round-badge').textContent=`Q${currentQ+1}/8 · Set ${roundNum}`;
+  document.getElementById('prog-bar').style.width=`${((currentQ)/8)*100}%`;
+  document.getElementById('image-card').classList.add('pulse');
+}
+
+// ===== WIN =====
+function win(player){
+  AC.resume();
+  sfxWin();
+  document.getElementById('image-card').classList.remove('pulse');
+
+  // Points: base 10 + streak bonus
+  streaks[player]++;
+  const streak=streaks[player];
+  const bonus=(streak>1)?(streak-1)*5:0;
+  const pts=10+bonus;
+  scores[player]+=pts;
+
+  // Reset others streaks
+  for(let i=0;i<NUM_PLAYERS;i++) if(i!==player) streaks[i]=0;
+
+  document.getElementById(`s${player}`).textContent=scores[player];
+
+  // Show combo
+  if(streak>=2){
+    sfxCombo();
+    const cf=document.getElementById('combo-flash');
+    cf.textContent=streak===2?'🔥 DOUBLE!':streak===3?'⚡ TRIPLE!':'💥 COMBO x'+streak;
+    cf.classList.remove('show');
+    void cf.offsetWidth;
+    cf.classList.add('show');
+  }
+
+  // Modal
+  const card=document.getElementById('reward-card');
+  card.style.borderColor=PLAYER_COLORS[player];
+  const wt=document.getElementById('win-text');
+  wt.textContent=`P${player+1} ${chosenChars[player].name}!`;
+  wt.style.color=PLAYER_COLORS[player];
+  document.getElementById('win-emo').textContent=chosenChars[player].emo;
+  document.querySelector('#overlay .pts-gained').textContent=`+${pts} POINTS${bonus>0?' 🔥':''}!`;
+  document.getElementById('win-streak').textContent=streak>1?`🔥 ${streak}x Streak Bonus! +${bonus} extra`:'';
+  document.getElementById('overlay').classList.add('show');
+}
+
+// ===== NEXT =====
+function next(){
+  sfxWhoosh();
+  document.getElementById('overlay').classList.remove('show');
+  currentQ++;
+  showQuestion();
+}
+
+// ===== WINNER =====
+function showWinner(){
+  if(beatInt){ clearInterval(beatInt); beatInt=null; }
+  sfxFinalWin();
+  const maxScore=Math.max(...scores);
+  const winnerIdx=scores.indexOf(maxScore);
+
+  document.getElementById('winner-emo').textContent=chosenChars[winnerIdx].emo;
+  document.getElementById('winner-name').textContent=`P${winnerIdx+1} — ${chosenChars[winnerIdx].name}`;
+  document.getElementById('winner-pts').textContent=`with ${maxScore} points`;
+
+  const ws=document.getElementById('screen-winner');
+  ws.style.borderColor=PLAYER_COLORS[winnerIdx];
+  ws.classList.add('show');
+
+  // Fireworks sound
+  setTimeout(sfxFinalWin,600);
+  setTimeout(sfxFinalWin,1200);
+}
+</script>
+</body>
+</html>
